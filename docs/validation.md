@@ -1,27 +1,30 @@
-# Validação da entrega unificada — 28/10/2026
+# Validação da entrega — 28/10/2026
 
-## Executado no ambiente de autoria
-- SDK .NET 10.0.403; build Release dos sete projetos com zero erros e zero warnings.
-- 31 testes de domínio/aplicação aprovados, zero falhas e ignorados.
-- 12 testes HTTP automatizados com WebApplicationFactory, JWT assinado em memória e validação real de autenticação/autorização, aprovados; contrato Swagger verifica enums em string e campos obrigatórios.
-- Total executado: 43 testes aprovados. Os testes HTTP não substituem o PostgreSQL real.
-- SQL das duas migrations gerado em scripts/schema.sql; EF confirmou ausência de mudanças de modelo sem migration.
-- Publicação local Release gerada com dotnet publish (não é deploy externo).
-- Cópia limpa, sem bin/obj ou segredos: novo build sem erros/warnings e repetição dos 43 testes aprovados.
-- Script Python de carga: compilação sintática e ajuda CLI verificadas; nenhum benchmark financeiro foi inventado.
-- Arquivos JSON/XML/YAML, referências entre projetos e integridade do ZIP verificados.
+## GitHub Actions com PostgreSQL real
+Execução aprovada: https://github.com/ediorhodendev/financial-api/actions/runs/40785248930
+Commit de código/workflow validado: ae88503dc0c0c112856fae32be89bf10a4660ff3.
 
-## Preparado, mas NÃO executado aqui
-- 12 testes de integração diretos no PostgreSQL e 1 fluxo HTTP completo com PostgreSQL (13 casos dependentes do banco).
-- Aplicação real das migrations e validação do trigger/locks/SQL em PostgreSQL.
-- Docker Compose, Dockerfile e scripts PowerShell no Windows.
-- Carga financeira e análise de planos/índices.
-- Publicação em GitHub público, execução do GitHub Actions e clone do repositório remoto.
+| Verificação | Resultado |
+|---|---|
+| Build Release dos sete projetos | Zero erros e zero warnings |
+| Domínio/aplicação | 31 testes aprovados |
+| Integração direta PostgreSQL | 12 testes aprovados |
+| HTTP, incluindo fluxo completo em PostgreSQL | 13 testes aprovados |
+| Total | 56 aprovados, zero falhas e zero ignorados |
+| Carga pequena de saldo | 100 respostas HTTP 200 |
+| Carga pequena de créditos | 100 respostas HTTP 201 |
+| Saldo após créditos | R$ 1,00, confirmado automaticamente |
 
-O ambiente não oferece Docker/PostgreSQL nem acesso conectado à conta GitHub. A validação restante é reproduzível com scripts/Test-All.ps1, scripts/load-test.py e scripts/Publish-GitHub.ps1, mas a presença desses arquivos não equivale à execução bem-sucedida.
+Os testes reais cobrem idempotência concorrente, disputa de saldo, créditos sem atualizações perdidas, rollback, titularidade, histórico inclusivo, paginação com empates, cadastro/abertura concorrente e trigger de imutabilidade. As migrations foram aplicadas no PostgreSQL temporário do CI.
 
-## Fechamento da entrega
-1. Executar Test-All.ps1 em PostgreSQL dedicado e corrigir qualquer falha encontrada.
-2. Registrar ambiente e resultados de carga em performance.md.
-3. Publicar o repositório público sem segredos e confirmar CI.
-4. Repetir o README a partir de um clone limpo remoto.
+Os relatórios TRX e os JSONs performance-read/performance-write estão no artefato test-results dessa execução. Credenciais/JWTs de desenvolvimento usados pela carga são temporários e não são publicados nos relatórios.
+
+## Verificações locais
+Build Release sem erros/warnings; 43 testes sem banco aprovados; SQL das duas migrations gerado; ausência de alterações de modelo sem migration; publicação local Release gerada. Uma cópia limpa repetiu build e testes HTTP. O repositório público foi clonado e seus 63 arquivos iniciais comparados com os fontes locais: conteúdo equivalente, com apenas uma quebra de linha final acrescentada a um JSON. Depois foi incluído o script de medição e atualizada a documentação com os resultados reais.
+
+## Publicação
+Repositório público: https://github.com/ediorhodendev/financial-api
+As verificações de publicação e CI foram concluídas. Atualizações posteriores exclusivamente documentais não alteram o código validado acima.
+
+## Limites da evidência
+A carga de 100 requisições por cenário é uma verificação pequena, não teste de capacidade máxima ou homologação bancária. Execução do Dockerfile, dos scripts PowerShell no Windows e backup/restore/failover não foram testados neste ambiente. Consulte performance.md e limitations.md para os limites da demonstração.
