@@ -26,6 +26,8 @@ jobs:
       - run: dotnet restore Financial.slnx
       - run: dotnet build Financial.slnx --no-restore -c Release
       - run: dotnet test Financial.slnx --no-build -c Release --logger trx --results-directory TestResults
+      - name: Bounded API exercise with PostgreSQL
+        run: bash scripts/benchmark-ci.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
