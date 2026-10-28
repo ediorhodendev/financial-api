@@ -8,5 +8,5 @@
 - Timeouts são por lock/statement/comando; não há orçamento total de requisição nem limitação de taxa global. Ajustar pools, backpressure e limites depois da carga.
 - Proteção EF/trigger não resiste a superusuário. Em produção separar identidade de migrations e execução; não usar o superusuário criado pelo Compose.
 - JWT em produção depende de emissor confiável, audience, HTTPS e rotação de chaves; local usa user-jwts. Não há endpoint próprio de login/refresh.
-- Backup, restore, failover, observabilidade externa e CI no GitHub precisam de execução e verificação no destino. Não armazenar tokens nem segredos no repositório.
+- Backup, restore, failover e observabilidade externa de produção precisam de execução e verificação no destino. O CI do GitHub foi executado e aprovado nesta demonstração. Não armazenar tokens nem segredos no repositório.
 - Mensageria futura deve usar outbox transacional; cache não deve autorizar débitos baseado em saldo desatualizado.
