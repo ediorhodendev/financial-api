@@ -4,6 +4,8 @@ Repositório público: https://github.com/ediorhodendev/financial-api
 
 Workflow: https://github.com/ediorhodendev/financial-api/actions
 
+**Validação:** build sem erros/warnings, 56 testes aprovados com PostgreSQL real e exercício de 100 consultas + 100 créditos sem falhas. Evidência e limites em docs/validation.md e docs/performance.md.
+
 API em C#/.NET 10 para registrar créditos e débitos e consultar saldo atual e histórico de clientes. PostgreSQL é a fonte de verdade. Clean Architecture com CQRS simples, transações ACID, idempotência, autorização JWT e testes automatizados.
 
 ## O que está implementado
