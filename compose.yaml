@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: financial
+      POSTGRES_USER: financial_local
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set a local password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - financial_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financial_local -d financial"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  postgres-test:
+    image: postgres:17
+    profiles: ['tests']
+    environment:
+      POSTGRES_DB: financial_test
+      POSTGRES_USER: financial_test
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local password in .env}
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financial_test -d financial_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  financial_data:
