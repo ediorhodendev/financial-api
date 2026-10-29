@@ -7,6 +7,6 @@
 - Cadastros exigem administrador e têm unicidade; não oferecem o contrato de replay dos lançamentos financeiros.
 - Timeouts são por lock/statement/comando; não há orçamento total de requisição nem limitação de taxa global. Ajustar pools, backpressure e limites depois da carga.
 - Proteção EF/trigger não resiste a superusuário. Em produção separar identidade de migrations e execução; não usar o superusuário criado pelo Compose.
-- JWT em produção depende de emissor confiável, audience, HTTPS e rotação de chaves; local usa user-jwts. Não há endpoint próprio de login/refresh.
+- JWT em produção depende de emissor confiável, audience, HTTPS e rotação de chaves; a alternativa com SDK usa user-jwts. O Compose de avaliação habilita explicitamente /demo/access, com dados fictícios e chave aleatória por processo, somente em Development e portas loopback. Esse endpoint não é um login de produção e deve permanecer desabilitado fora da avaliação. Não há login/refresh de produção.
 - Backup, restore, failover e observabilidade externa de produção precisam de execução e verificação no destino. O CI do GitHub foi executado e aprovado nesta demonstração. Não armazenar tokens nem segredos no repositório.
 - Mensageria futura deve usar outbox transacional; cache não deve autorizar débitos baseado em saldo desatualizado.
