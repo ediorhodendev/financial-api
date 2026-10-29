@@ -4,7 +4,7 @@ Repositório público: https://github.com/ediorhodendev/financial-api
 
 Workflow: https://github.com/ediorhodendev/financial-api/actions
 
-**Validação anterior:** 56 testes aprovados com PostgreSQL real e exercício de 100 consultas + 100 créditos sem falhas. A atualização Docker adiciona dois testes e uma etapa de smoke test no CI; confira o status da execução mais recente. Evidência e limites em docs/validation.md e docs/performance.md.
+**Validação:** build sem erros/warnings, 58 testes aprovados com PostgreSQL real e Docker Compose validado de ponta a ponta (migrations, seed, JWT de demonstração, crédito, replay idempotente, débito e saldo). [Execução aprovada](https://github.com/ediorhodendev/financial-api/actions/runs/40934977012). Evidência e limites em docs/validation.md e docs/performance.md.
 
 API em C#/.NET 10 para registrar créditos e débitos e consultar saldo atual e histórico de clientes. PostgreSQL é a fonte de verdade. Clean Architecture com CQRS simples, transações ACID, idempotência, autorização JWT e testes automatizados.
 
