@@ -4,7 +4,7 @@ Repositório público: https://github.com/ediorhodendev/financial-api
 
 Workflow: https://github.com/ediorhodendev/financial-api/actions
 
-**Validação:** build sem erros/warnings, 56 testes aprovados com PostgreSQL real e exercício de 100 consultas + 100 créditos sem falhas. Evidência e limites em docs/validation.md e docs/performance.md.
+**Validação anterior:** 56 testes aprovados com PostgreSQL real e exercício de 100 consultas + 100 créditos sem falhas. A atualização Docker adiciona dois testes e uma etapa de smoke test no CI; confira o status da execução mais recente. Evidência e limites em docs/validation.md e docs/performance.md.
 
 API em C#/.NET 10 para registrar créditos e débitos e consultar saldo atual e histórico de clientes. PostgreSQL é a fonte de verdade. Clean Architecture com CQRS simples, transações ACID, idempotência, autorização JWT e testes automatizados.
 
@@ -16,6 +16,50 @@ API em C#/.NET 10 para registrar créditos e débitos e consultar saldo atual e 
 - Histórico protegido contra UPDATE/DELETE no EF Core e por trigger no PostgreSQL.
 - Swagger com Bearer, parâmetros de idempotência e consultas; health checks; Problem Details; logs sem corpos/tokens, com correlação.
 - Migrations, Docker Compose, Dockerfile, CI e scripts de execução, testes, carga e publicação.
+
+## Avaliação: tudo em Docker com um comando
+
+Pré-requisito: Docker Desktop iniciado, com Linux containers e Docker Compose v2.
+Após clonar o repositório, abra o terminal na pasta que contém `compose.yaml` e execute:
+
+```powershell
+docker compose up --build -d
+```
+
+Não é necessário instalar .NET, PostgreSQL ou criar `.env`. O Compose sobe PostgreSQL,
+aguarda o health check, aplica migrations, cria uma conta fictícia sem duplicar dados e
+inicia a API. Aguarde `docker compose logs -f migrations api` mostrar a API iniciada.
+Swagger: http://localhost:5080/swagger. Readiness: http://localhost:5080/health/ready.
+Se as migrations falharem, a API não inicia; consulte `docker compose logs migrations`.
+
+No Swagger, execute **POST /demo/access** (sem corpo). A resposta contém `accountId`,
+`operatorToken` e `adminToken`, válidos por uma hora. Clique **Authorize** e cole apenas
+`operatorToken` para movimentar e consultar a conta fictícia. Use `adminToken` para
+os endpoints administrativos. Não é necessário executar comandos .NET para obter tokens.
+A chave JWT é aleatória por processo: após reiniciar a API, obtenha novos tokens.
+
+Exemplo completo em PowerShell, após a inicialização:
+
+```powershell
+$demo = Invoke-RestMethod -Method Post http://localhost:5080/demo/access
+$headers = @{ Authorization = "Bearer $($demo.operatorToken)"; 'Idempotency-Key' = 'avaliacao-credito-001' }
+Invoke-RestMethod -Method Post "http://localhost:5080/api/accounts/$($demo.accountId)/movements" -Headers $headers -ContentType 'application/json' -Body '{"type":"Credit","amount":100}'
+Invoke-RestMethod "http://localhost:5080/api/accounts/$($demo.accountId)/balance" -Headers $headers
+```
+
+A mesma chave e conteúdo não duplicam o crédito ao repetir o exemplo. Os dados persistem
+no volume `financial_data`. Para parar preservando-os: `docker compose down`.
+Para consultar o estado: `docker compose ps -a`.
+
+**Este Compose é exclusivo de avaliação local.** Expõe portas somente em loopback e usa
+senha pública de demonstração. O endpoint `/demo/access` emite acesso administrativo
+local sem login, só existe com `Demo__Enabled=true` e recusa ambientes diferentes de
+Development. Não publique este ambiente na internet nem use dados reais. Para produção,
+desabilite Demo, configure um emissor JWT confiável e segredos, HTTPS e privilégios mínimos.
+O `.env` é opcional para mudar `POSTGRES_PASSWORD` e `API_PORT`; mudar a senha não altera
+um volume PostgreSQL já inicializado. As credenciais não são incluídas na imagem.
+
+## Execução com SDK local (alternativa)
 
 ## Pré-requisitos
 Windows/PowerShell, SDK .NET 10, Docker Desktop com Compose v2 e acesso ao NuGet. Python 3 é necessário apenas para o script de carga. PostgreSQL local usa porta 5432; testes usam 5433. Os containers são PostgreSQL 17; o banco é apenas acessível em loopback.
@@ -30,7 +74,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .\scripts\Start-Local.ps1
 ```
 
-O script sobe o banco, restaura/builda, aplica as migrations, cria a conta fictícia e inicia a API. A primeira execução sem .env cria o exemplo e pede sua edição. A senha é usada só no ambiente/processo local. Para execução manual:
+Nesta alternativa com SDK, mantenha a API do Compose parada para liberar a porta 5080. O script sobe o banco, restaura/builda, aplica as migrations, cria a conta fictícia e inicia a API. A primeira execução sem .env cria o exemplo e pede sua edição. A senha é usada só no ambiente/processo local. Para execução manual:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
@@ -148,7 +192,7 @@ O script retorna throughput, latência p50/p95/max e códigos HTTP. Não há ben
 ## Arquitetura e execução em container
 Domain não depende de frameworks. Application define casos de uso e portas. Infrastructure implementa PostgreSQL e transações. Api compõe autenticação, autorização, documentação e transporte. Veja docs/architecture.md, docs/decisions.md e docs/limitations.md.
 
-Dockerfile compila/publica a API e executa como usuário `app`. Ele não aplica migrations nem embute segredos. Configure ConnectionStrings__Financial, Jwt__Authority e Jwt__Audience ao executá-lo em produção; adote HTTPS no proxy/ingress e um emissor real. O Compose fornecido sobe bancos locais; a API é iniciada pelo script .NET para facilitar tokens locais e debugging.
+Dockerfile compila/publica a API e executa como usuário `app`. Ele não aplica migrations nem embute segredos. Configure ConnectionStrings__Financial, Jwt__Authority e Jwt__Audience ao executá-lo em produção; adote HTTPS no proxy/ingress e um emissor real. O Compose inicia banco, migrations/seed e API para avaliação local. O script .NET é uma alternativa para debugging.
 
 ## GitHub público e entrega
 O repositório desta entrega é ediorhodendev/financial-api. Para publicar uma cópia na sua conta, depois de validar testes e revisar o conteúdo:
