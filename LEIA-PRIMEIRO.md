@@ -1,14 +1,22 @@
-# Financial API — entrega unificada
+# Executar a avaliação
 
-Todos os arquivos das etapas 1 a 7 estão reunidos neste pacote: código, migrations, Swagger, testes, scripts e documentação. O código acumulado inclui as implementações das etapas anteriores.
+Com Docker Desktop iniciado (Linux containers e Compose v2), abra o terminal na raiz
+do repositório e execute um único comando:
 
-Extraia diretamente em C:\Projetos\financial-api\, preservando seu .env e salvando cópia de alterações locais. Financial.slnx deve estar na raiz.
+```powershell
+docker compose up --build -d
+```
 
-1. Leia README.md e edite .env a partir de .env.example.
-2. Execute scripts/Start-Local.ps1 para banco, migrations, dados fictícios e API.
-3. Abra http://localhost:5080/swagger e gere os JWTs locais conforme README.
-4. Execute scripts/Test-All.ps1 para a suíte completa em banco de testes.
-5. Registre carga conforme docs/performance.md.
-6. Publique com scripts/Publish-GitHub.ps1 após revisar o conteúdo e os testes.
+O ambiente inicia PostgreSQL, aplica migrations, cria a conta fictícia e inicia a API.
+Não exige SDK .NET ou PostgreSQL instalado, nem criação de .env.
 
-Os testes efetivamente executados estão em docs/validation.md. Execução de PostgreSQL/carga e publicação no GitHub não devem ser presumidas pela existência dos scripts. Repositório público desta entrega: https://github.com/ediorhodendev/financial-api. O resultado dos testes remotos deve ser confirmado no GitHub Actions.
+1. Aguarde a inicialização; acompanhe com `docker compose logs -f migrations api`.
+2. Abra http://localhost:5080/swagger.
+3. Execute POST /demo/access para obter accountId, operatorToken e adminToken.
+4. Em Authorize, cole somente operatorToken para operar na conta fictícia.
+5. Use Idempotency-Key diferente para cada nova operação financeira.
+
+Para parar preservando os dados: `docker compose down`.
+O ambiente é local, usa dados fictícios e credenciais públicas de demonstração.
+O modo demo nunca deve ser exposto na internet. Consulte README.md para detalhes,
+fluxo de teste, execução alternativa com SDK e configuração de produção.
