@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Financial.Api.Development;
 using Financial.Api.Endpoints;
 using Financial.Api.Errors;
 using Financial.Api.OpenApi;
@@ -17,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+var demo = DemoAccess.Create(builder.Configuration, builder.Environment);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -25,7 +27,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<MovementType>(allowIntegerValues: false));
 });
 builder.Services.AddDbContextFactory<FinancialDbContext>(options => options.UseNpgsql(
-    builder.Configuration.GetConnectionString("Financial") ?? throw new InvalidOperationException("Set ConnectionStrings__Financial."),
+    DatabaseConnection(builder.Configuration),
     postgres => postgres.CommandTimeout(15)));
 builder.Services.AddScoped<IAccountTransactionFactory, PostgresAccountTransactionFactory>();
 builder.Services.AddScoped<RegisterMovementHandler>();
@@ -37,6 +39,7 @@ builder.Services.AddScoped<ProvisioningHandler>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
+    if (demo is not null) { demo.Configure(options); return; }
     options.TokenValidationParameters.RoleClaimType = "role";
     var authority = builder.Configuration["Jwt:Authority"];
     if (!string.IsNullOrWhiteSpace(authority))
@@ -54,6 +57,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 var app = builder.Build();
 
+if (args.Contains("--migrate", StringComparer.Ordinal))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<FinancialDbContext>().Database.MigrateAsync();
+    return;
+}
 if (args.Contains("--seed-demo", StringComparer.Ordinal))
 {
     if (!app.Environment.IsDevelopment()) throw new InvalidOperationException("Demo seed is only available in Development.");
@@ -115,8 +124,21 @@ app.MapPost("/api/accounts/{accountId:guid}/movements", async (
     .WithSummary("Register a credit or debit atomically; retries reuse Idempotency-Key.")
     .Produces<MovementResult>(201).Produces<MovementResult>(200).ProducesProblem(400)
     .ProducesProblem(404).ProducesProblem(409).ProducesProblem(503);
+if (demo is not null) demo.MapEndpoints(app);
 app.MapAccountReadEndpoints();
 app.MapProvisioningEndpoints();
 app.Run();
+static string DatabaseConnection(IConfiguration configuration)
+{
+    var configured = configuration.GetConnectionString("Financial");
+    if (!string.IsNullOrWhiteSpace(configured)) return configured;
+    return new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = configuration["Database:Host"] ?? "postgres",
+        Database = configuration["Database:Name"] ?? "financial",
+        Username = configuration["Database:User"] ?? "financial_local",
+        Password = configuration["Database:Password"] ?? throw new InvalidOperationException("Set ConnectionStrings__Financial or Database__Password.")
+    }.ConnectionString;
+}
 public sealed record MovementRequest(MovementType Type, decimal Amount);
 public partial class Program { }
