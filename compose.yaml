@@ -4,9 +4,9 @@ services:
     environment:
       POSTGRES_DB: financial
       POSTGRES_USER: financial_local
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set a local password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financial-local-demo-only}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - financial_data:/var/lib/postgresql/data
     healthcheck:
@@ -14,13 +14,39 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  migrations:
+    build: .
+    environment: &api-environment
+      ASPNETCORE_ENVIRONMENT: Development
+      Database__Host: postgres
+      Database__Name: financial
+      Database__User: financial_local
+      Database__Password: ${POSTGRES_PASSWORD:-financial-local-demo-only}
+      Demo__Enabled: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ["dotnet Financial.Api.dll --migrate && dotnet Financial.Api.dll --seed-demo"]
+    restart: "no"
+  api:
+    build: .
+    environment:
+      <<: *api-environment
+      ASPNETCORE_HTTP_PORTS: "8080"
+    ports:
+      - "127.0.0.1:${API_PORT:-5080}:8080"
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
   postgres-test:
     image: postgres:17
     profiles: ['tests']
     environment:
       POSTGRES_DB: financial_test
       POSTGRES_USER: financial_test
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local password in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financial-local-demo-only}
     ports:
       - "127.0.0.1:5433:5432"
     healthcheck:
